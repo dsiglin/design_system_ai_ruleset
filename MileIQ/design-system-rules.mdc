@@ -1,0 +1,999 @@
+---
+description: Design System rules (human + machine)
+alwaysApply: true
+version: 1.0.0
+updated: 2025-08-26
+license:
+  name: MIT
+  author: David Siglin
+  website: http://www.davidsiglin.com
+  email: dsiglin@gmail.com
+variables:
+  tokensDir: "src/theme/css"
+  componentsDir: "src/components"
+  storiesDir: "src/stories"
+capabilities:
+  - name: ripgrep
+    optional: true
+  - name: storybook
+    optional: true
+  - name: figma
+    optional: true
+ruleCatalog:
+  - id: GATE:FIGMA-CONNECTION
+    title: Figma connection validated
+    type: gate
+    severity: error
+    scope: process
+    enforcement: hard_stop
+    checks:
+      - description: Manual verification of Figma design access and node ID
+        optional: true
+  - id: GATE:LINT-ZERO-WARNINGS
+    title: Lint passes with zero warnings
+    type: gate
+    severity: error
+    scope: process
+    enforcement: hard_stop
+    checks:
+      - description: Run lint command
+        optional: true
+        command: npm run lint:component -- --quiet || true
+  - id: RULE:tokens-semantic
+    title: Use semantic tokens only
+    type: rule
+    severity: error
+    scope: css
+    enforcement: hard_stop
+    checks:
+      - description: Optional scan for raw colors
+        optional: true
+        command: rg -n "#[0-9a-fA-F]{3,6}|rgb\\s*\\(|rgba\\s*\\(" {{componentsDir}} --glob "**/*.css"
+      - description: Optional scan for token usage
+        optional: true
+        command: rg -n "var\\(--(foreground|background|surface|border|interactive|status)" {{componentsDir}} --glob "**/*.css"
+    references:
+      - "{{tokensDir}}/colors-new.css"
+  - id: RULE:no-component-custom-props
+    title: No component-local CSS custom properties
+    type: rule
+    severity: error
+    scope: css
+    enforcement: hard_stop
+    checks:
+      - description: Optional scan for custom property definitions
+        optional: true
+        command: rg -n '(^|\s)--[a-zA-Z0-9-]+\s*:' {{componentsDir}} --glob "**/*.css"
+    references:
+      - "{{tokensDir}}"
+  - id: RULE:a11y-focus-ring
+    title: Focus ring token on :focus-visible
+    type: rule
+    severity: error
+    scope: css
+    enforcement: hard_stop
+    checks:
+      - description: Optional scan for :focus-visible usage
+        optional: true
+        command: rg -n ":focus-visible" {{componentsDir}} --glob "**/*.css"
+    references:
+      - "{{tokensDir}}/colors-new.css"
+  - id: RULE:radix-first
+    title: Prefer Radix primitives for complex components
+    type: rule
+    severity: error
+    scope: jsx
+    enforcement: hard_stop
+    checks:
+      - description: Manual fit-check; see Phase 0B (Complexity Assessment)
+        optional: true
+    references:
+      - "https://www.radix-ui.com/primitives/docs"
+  - id: RULE:sb-autodocs
+  - id: RULE:export-pattern
+    title: Export pattern enforced
+    type: rule
+    severity: error
+    scope: js
+    enforcement: hard_stop
+    checks:
+      - description: Manual check of default export in file, named exports in index, root re-export
+        optional: true
+  - id: RULE:button-v2-only
+    title: Use ButtonV2 only
+    type: rule
+    severity: error
+    scope: jsx
+    enforcement: hard_stop
+    checks:
+      - description: Manual check that old Button is not imported/used
+        optional: true
+  - id: RULE:complexity-assessment
+    title: Component Complexity Assessment
+    type: rule
+    severity: error
+    scope: process
+    enforcement: hard_stop
+    checks:
+      - description: Manual scoring per Phase 0B
+        optional: true
+    title: Storybook stories use tags: ["autodocs"]
+    type: rule
+    severity: error
+    scope: storybook
+    enforcement: hard_stop
+    checks:
+      - description: Optional scan for autodocs tags
+        optional: true
+        command: rg -n "tags:\s*\[\"autodocs\"\]" {{storiesDir}} --glob "**/*.stories.*"
+    references:
+      - "{{storiesDir}}"
+---
+
+<!--
+MIT License
+
+Copyright (c) 2025 David Siglin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Author: David Siglin — http://www.davidsiglin.com — dsiglin@gmail.com
+-->
+
+---
+
+gates:
+  - FIGMA-CONNECTION
+  - LINT-ZERO-WARNINGS
+rules:
+  - TOKENS-SEMANTIC
+  - TOKENS-NO-PRIMITIVES
+  - RADIX-FIRST
+  - COMPLEXITY-ASSESSMENT
+  - A11Y-FOCUS-RING
+  - EXPORT-PATTERN
+  - BUTTON-V2-ONLY
+guidelines:
+  - MUI-API-REFERENCE
+
+Definition of Done:
+  - **Figma data successfully extracted** (MANDATORY - no assumptions)
+  - Figma extraction complete and mapped to tokens
+  - Complexity assessment completed or rationale documented
+  - Tokens validated; no primitives; gaps documented
+  - Radix primitive adopted or exception rationale recorded
+  - Focus ring token applied; disabled state has pointer/cursor rules
+  - Stories with autodocs, controls, and Figma link
+  - Ref forwarding, PropTypes, export pattern
+  - **Component linting passes with 0 warnings** (use `npm run lint:component` for reliable linting)
+---
+
+# Cursor Rules — Design System (Figma MCP + Vibe-Coding)
+
+### Quick Links
+- GATE:FIGMA-CONNECTION → see Rule Card
+- RULE:TOKENS-SEMANTIC → see Rule Card
+- RULE:NO-COMPONENT-CUSTOM-PROPS → see Rule Card
+- RULE:A11Y-FOCUS-RING → see Rule Card
+- RULE:RADIX-FIRST → see Rule Card
+- RULE:SB-AUTODOCS → see Rule Card
+- RULE:EXPORT-PATTERN → see Rule Card
+- RULE:BUTTON-V2-ONLY → see Rule Card
+- GATE:LINT-ZERO-WARNINGS → see Rule Card
+
+## 0) Mission & Guardrails
+- **Goal:** Produce/modify **production components** that designers and engineers can trust.
+- **Hard rules:**  
+  - **MUST** use **semantic tokens** from `theme/css` for **all** visual values. **No raw literals.**  
+  - **MUST NOT define component-local CSS custom properties** (no `:root` or `--foo:` inside `src/components/**`). Components may only consume tokens from `src/theme/css/**`.
+  - **MUST** **reuse existing components** when a Figma sub-layer matches their role/shape.  
+  - **MUST** preserve **a11y** and **API stability** unless intentionally versioning/changing.  
+  - **MUST** follow **export pattern** (default in file, named in folder index, re-export in root index).  
+  - **MUST** use **ButtonV2** for all button components (never use old Button component).
+  - **MUST** use **Radix UI primitives** for complex components (see Complexity Assessment below).
+
+## Quickstart — Golden Path (for humans and AI)
+
+- [ ] **GATE 0 — Figma Connection Validation (MANDATORY)**
+  - [ ] Verify Figma design access and node ID availability
+  - [ ] **STOP IMMEDIATELY if design is not accessible** - report access failure
+- [ ] Reuse vs Novel (see Decision Tree — Reuse vs Novel). If reuse: delta plan, else novel path
+- [ ] Token audit for touched tokens (STOP if token is missing; escalate)
+- [ ] Radix Complexity Gate (Phase 0B). Choose Radix/Hybrid/Custom+Rationale
+- [ ] Architecture plan: props/variants, tokens, states, exports, API inspiration (optional)
+- [ ] Implement: layout (no magic numbers), tokens only, focus ring (see RULE:A11Y-FOCUS-RING), disabled state
+- [ ] Storybook: see RULE:SB-AUTODOCS (autodocs + Playground + Figma link)
+
+### Agent Contract (minimal)
+- MUST pass these gates/rules (see Rule Cards by ID):
+  - GATE:FIGMA-CONNECTION — design accessible and node ID available; otherwise STOP
+  - RULE:TOKENS-SEMANTIC — no invented tokens or raw colors; otherwise STOP
+  - RULE:NO-COMPONENT-CUSTOM-PROPS — no component-local custom properties; otherwise STOP
+  - RULE:RADIX-FIRST — use Radix primitive or document exception
+  - GATE:LINT-ZERO-WARNINGS — lint passes with 0 warnings (`npm run lint:component`)
+- Output MUST include:
+  - RULE:SB-AUTODOCS — stories with autodocs, Playground controls, Figma link
+  - RULE:EXPORT-PATTERN — ref forwarding, PropTypes, export pattern
+  - RULE:A11Y-FOCUS-RING — a11y (roles, focus ring token, keyboard), disabled state
+
+### Decision Tree — Reuse vs Novel
+Note: When a decision implies enforcement (tokens, a11y, Radix, Storybook), consult the corresponding Rule Card by ID for the authoritative check.
+1) Search existing components (pattern + directory + exports)
+2) Does a component match role/shape and variants can cover design?
+   - Yes → Reuse with a delta plan; run only token audit for touched tokens; skip deep Phase 1
+   - No → Novel path: complete Phase 1 extraction, Phase 0B Radix gate, and Phase 2 planning
+3) If a mismatch appears mid-implementation → Pause, re-evaluate, document decision
+
+### Rule & Gate IDs (stable)
+- GATE:FIGMA-CONNECTION — STOP: "No Figma connection; do not create components."
+- RULE:TOKENS-SEMANTIC — MUST use semantic tokens from `src/theme/css`
+- RULE:TOKENS-NO-PRIMITIVES — MUST NOT use raw palette tokens or hex/rgb(a)
+ - RULE:NO-COMPONENT-CUSTOM-PROPS — Components must not declare CSS custom properties; only consume tokens from `src/theme/css/**`
+- RULE:RADIX-FIRST — MUST adopt a Radix primitive when available, or document exception (see Rule Card)
+- RULE:COMPLEXITY-ASSESSMENT — MUST assess component complexity and check Radix UI for complex components (3+ characteristics)
+- RULE:A11Y-FOCUS-RING — MUST use semantic focus ring token for `:focus-visible`
+- RULE:SB-AUTODOCS — MUST use `tags: ["autodocs"]` + Playground + Figma link
+- RULE:EXPORT-PATTERN — MUST follow default export in file, named export in index, root re-export
+- RULE:BUTTON-V2-ONLY — MUST use ButtonV2 for all button components (never old Button)
+- GATE:LINT-ZERO-WARNINGS — STOP: "Lint must pass with zero warnings."
+ - GUIDELINE:MUI-API-REFERENCE — MAY reference Material UI APIs for public prop naming and usage patterns when it improves DX and does not conflict with our tokens/architecture (suggestion, not a mandate)
+
+## Rule Cards (machine + human)
+
+### RULE:tokens-semantic
+- **Type/Severity**: rule/error (hard_stop)
+- **What**: Use semantic tokens only from `{{tokensDir}}`. No raw hex/rgb(a), no palette primitives.
+- **Why**: Consistency, theming, accessibility, maintainability.
+- **How to check (optional)**:
+  - `rg -n "#[0-9a-fA-F]{3,6}|rgb\s*\(|rgba\s*\(" {{componentsDir}} --glob "**/*.css"`
+  - `rg -n "var\(--(foreground|background|surface|border|interactive|status)" {{componentsDir}} --glob "**/*.css"`
+- **RIGHT**:
+```css
+color: var(--foreground-primary);
+```
+- **WRONG**:
+```css
+color: #333; /* primitive */
+```
+- **References**: `{{tokensDir}}/colors-new.css`
+
+### RULE:no-component-custom-props
+- **Type/Severity**: rule/error (hard_stop)
+- **What**: Components must not declare CSS custom properties; only consume tokens.
+- **How to check (optional)**: `rg -n '(^|\s)--[a-zA-Z0-9-]+\s*:' {{componentsDir}} --glob "**/*.css"`
+- **WRONG**:
+```css
+:root { --segmented-control-background: #f1f0ef; }
+```
+- **RIGHT**:
+```css
+background: var(--surface-subtle);
+```
+- **References**: `{{tokensDir}}`
+
+### RULE:a11y-focus-ring
+- **Type/Severity**: rule/error (hard_stop)
+- **What**: All interactive components use a semantic focus ring on `:focus-visible`.
+- **RIGHT**:
+```css
+:focus-visible { outline: 2px solid var(--interactive-focus-ring); }
+```
+- **How to check (optional)**: `rg -n ":focus-visible" {{componentsDir}} --glob "**/*.css"`
+
+### RULE:radix-first
+- **Type/Severity**: rule/error (hard_stop)
+- **What**: Prefer Radix primitives for complex components (see Phase 0B scoring).
+- **Check**: Manual fit-check against Radix docs; document exceptions.
+- **References**: https://www.radix-ui.com/primitives/docs
+
+### RULE:sb-autodocs
+- **Type/Severity**: rule/error (hard_stop)
+- **What**: Storybook files must include `tags: ["autodocs"]` and expose meaningful controls.
+- **How to check (optional)**: `rg -n "tags:\s*\[\"autodocs\"\]" {{storiesDir}} --glob "**/*.stories.*"`
+- **RIGHT**:
+```js
+export default { title: "Components/X", component: X, tags: ["autodocs"] };
+```
+
+## 1) MANDATORY Component Development Workflow
+
+### Phase 0A: Figma Connection Validation (PREREQUISITE)
+
+**🚨 CRITICAL: MUST verify Figma connection before ANY component work**
+
+**MANDATORY CONNECTION CHECKLIST (MUST complete ALL steps):**
+1. **Verify Figma design access** by confirming node ID availability
+2. **STOP IMMEDIATELY if design is not accessible** - DO NOT proceed with component creation
+3. **Document access status** in your response before proceeding
+
+**Connection Failure Protocol:**
+- ❌ **NEVER attempt component creation** without accessible Figma design
+- 🛑 **STOP workflow immediately** if design access fails
+- 📝 **Report access failure** to user with specific error
+- 💡 **Suggest design access verification** before attempting component work
+- ✋ **DO NOT proceed to Phase 0 (Quick Triage)** without accessible design
+- 🚫 **DO NOT create components based on assumptions** - only create from actual Figma data
+
+**Connection Success Indicators (ALL must pass):**
+- ✅ Figma design is accessible and node ID is available
+- ✅ Design data can be extracted from the provided Figma node
+
+**VALIDATION CHECKLIST (MUST complete before ANY component work):**
+- [ ] Figma design is accessible via provided URL
+- [ ] Node ID is valid and accessible
+- [ ] Design data can be extracted before proceeding
+
+**RULE: No accessible Figma design = No component development. Period.**
+**RULE: No Figma data = No component creation. Period.**
+
+**CONNECTION TEST PROTOCOL (MANDATORY):**
+Before ANY component work, you MUST:
+1. Verify Figma design accessibility via provided URL
+2. Confirm node ID is valid and accessible
+3. If design is not accessible, STOP and report: "Figma design access failed. Cannot proceed with component creation without accessible Figma data."
+4. Only proceed if design is accessible and you can successfully extract design data
+
+### Phase 0: Quick Triage (2–5 min hard cap)
+
+Purpose: decide reuse vs. new before deep analysis.
+
+- Ask: Is there an existing component with matching role/shape? Can variants/theming meet the design?
+- If "likely reuse": create a focused delta plan and proceed to Phase 3 to verify assumptions. Only do Phase 1 deep dive if reuse fails.
+- If "novel": proceed through all phases; document “Novel Patterns” in planning.
+
+### Flow Selector (choose ONE path)
+
+- **Flow A · Reuse-first**: If triage suggests reuse is likely
+  - Do Step 2B (Systematic Component Search) immediately
+  - If a match exists, do Step 2C (Architecture Planning) as a delta plan
+  - Run Step 2A (Token Audit) only for tokens you’ll touch
+  - Phase 1 deep analysis becomes “as-needed for deltas” (do 1A/1B/1C only where the reused component differs)
+  - Proceed to Phase 3 gate (Reuse path checklist)
+
+- **Flow B · Novel component**: If triage suggests novel
+  - Complete Phase 1 (1A/1B/1C) fully
+  - Complete Phase 2 (2A/2B/2C)
+  - Proceed to Phase 3 gate (Novel path checklist)
+
+### Phase 0B: Component Complexity Assessment (MANDATORY for Novel Components)
+
+Use this quick decision tree to determine Radix usage without losing rigor.
+
+1) Score complexity (check all that apply):
+- Behavior: multi-state OR keyboard navigation OR focus management OR explicit ARIA needs
+- UI: overlay/portal OR dynamic positioning OR animations OR responsive behavior differences
+- Data/Logic: form integration OR complex event handling OR performance concerns
+
+2) Decide based on score:
+- 0: Build custom (still follow tokens/a11y rules)
+- 1–2: SHOULD check Radix; use if fit is good
+- 3+: MUST use Radix primitive or document exception
+
+3) Fit check (fast):
+- Map to a primitive (see Radix Mapping below)
+- Skim docs: `https://www.radix-ui.com/primitives/docs`
+- Confirm a11y/keyboard coverage and required features
+
+4) Implementation choice:
+- Radix + theming (preferred), or
+- Hybrid (Radix behavior + custom visuals), or
+- Custom with written rationale (why Radix was not used)
+
+Docs: Note the primitive used (or exception) in the component header comment.
+
+### Phase 1: Figma Extraction Checklist (concise)
+
+Complete before coding (reuse path may document only deltas):
+1. Fetch node and document variants and child structure
+2. Capture layout: `layoutMode`, `layoutWrap`, `padding`, `itemSpacing`, `primaryAxisAlignItems`, `counterAxisAlignItems`
+3. Map exact spacing/borders/effects to tokens (no raw values)
+4. Identify boolean controls → will become Storybook controls
+5. Typography mapping: use `typography.css` variables for sizes/line-heights and primitive weight variables (see RULE:TOKENS-SEMANTIC)
+   - If no exact match exists, document the gap and choose the nearest variables; propose follow-up if recurring.
+
+#### Step 1C: State Analysis (Interactive Components)  
+Use fully for Flow B (Novel). For Flow A (Reuse), capture only states impacted by deltas.
+**Create state comparison table:**
+
+| Property | Default | Hover | Active | Disabled |
+|----------|---------|--------|--------|----------|
+| Border | ? | ? | ? | ? |
+| Background | ? | ? | ? | ? |
+| Text Color | ? | ? | ? | ? |
+
+**Fill with exact Figma data - no assumptions.**
+
+### Phase 2: Token Discovery & Component Architecture
+
+#### Step 2A: MANDATORY Token Validation
+**🚨 CRITICAL: Validate ALL tokens before using them - NEVER invent tokens**
+
+Use canonical scripts (see Appendix) to audit tokens. Reference results in your PR/component header.
+
+**Guardrails:**
+- Always scan the entire `src/theme/css` directory. Do not assume a fixed file list.
+- **MANDATORY: Use semantic tokens ONLY** - Never use primitive tokens (e.g., `--sand-4`, `--blue-500`) in component CSS
+ - **No component-local custom properties** — Do not declare `--my-token:` in component CSS. If a new token is needed, propose it in `src/theme/css/**` first, then consume it.
+- **Figma Semantic Token Mapping (MANDATORY)**: If Figma specifies a semantic token name (e.g., "foreground-subtle"), use that exact semantic token (`var(--foreground-subtle)`)
+- **Primitive Token Prohibition**: If you see a primitive token in Figma (e.g., `#e2e1de`), search for the corresponding semantic token first:
+  - Use the token audit script to locate valid semantic mappings
+- **Escalation Required**: If a needed semantic token is not found, STOP and ask for guidance (e.g., "Should I create a new semantic token for X, or use existing token Y?")
+- If new tokens/files appear, update the Architecture Planning comment with the “Token Snapshot” changes before coding.
+
+**Figma Token Alignment (MANDATORY):**
+- **Semantic Token Priority**: If Figma shows a semantic token name (e.g., "foreground-subtle"), use that exact semantic token (`var(--foreground-subtle)`)
+- **Primitive Token Handling**: If Figma shows a primitive color (e.g., `#e2e1de`), search for the corresponding semantic token:
+  - Map primitive colors discovered in Figma to existing semantic tokens via the audit results
+- **Escalation Required**: If no semantic token exists for a Figma primitive, STOP and ask for guidance (create new semantic token vs. use existing semantic token)
+- **Never Use Primitives**: Do not translate Figma semantic tokens into raw palette primitives in component CSS
+ 
+**Figma → Token Mapping (cheat sheet):**
+- foreground → `--color-text-*`
+- surface → `--color-surface-*`
+- border → `--color-border-*`
+- interactive → `--color-interaction-*`
+- spacing → `--space-*`
+- radius → `--radii-*`
+- shadow → `--shadow-*`
+
+**RULE: If a token doesn't appear in these scans, it DOESN'T EXIST.**
+
+**Token Validation Failure Recovery:**
+1. **Stop immediately** - don't proceed with invalid/missing token
+2. **Search for alternatives** using discovery commands above
+3. **Escalate for guidance**: Ask whether to create a new semantic token or which existing semantic token to use
+4. If guidance is not immediately available and you must proceed, **use the closest semantic token as a temporary placeholder** (never a raw palette primitive) and **document the gap** in "Open Questions": "Missing token: [describe needed token], temporarily using [semantic token] until guidance"
+
+#### Step 2B: Component Reuse Analysis
+
+**🔍 MANDATORY: SYSTEMATIC COMPONENT SEARCH PROCESS:**
+
+1. **Search by UI Pattern**:
+   ```bash
+   grep -r "heading.*value" src/components/  # For stat displays
+   grep -r "icon.*text.*badge" src/components/  # For labeled elements
+   grep -r "filter.*dropdown" src/components/  # For filter controls
+   ```
+
+2. **Search by Visual Element Type**:
+   - **Cards/Stats**: Search "Card", "Stat", "Metric", "Summary", "Display"
+   - **Navigation**: Search "Nav", "Breadcrumb", "Header", "Menu"
+   - **Data Display**: Search "Table", "List", "Grid", "Row", "Cell"
+   - **Inputs/Controls**: Search "Filter", "Button", "Input", "Select", "Toggle"
+   - **Feedback**: Search "Alert", "Toast", "Banner", "Message", "Status"
+   - **Layout**: Search "Container", "Section", "Panel", "Wrapper"
+
+3. **Directory Scan**:
+   ```bash
+   ls src/components/ | head -20  # First 20 directories
+   ls src/components/ | tail -20  # Last 20 directories
+   grep "export.*Card" index.js
+   ```
+
+**🚨 COMMON REUSE FAILURES TO AVOID:**
+- ❌ Building custom summary stats → Use `StatCard`
+- ❌ Building custom filter UI → Use `FilterButtonV2` + `Dropdown`
+- ❌ Building custom table cells → Use `TableCell`, `TableCellLabel`
+- ❌ Building custom navigation → Check for existing nav components
+
+**💡 NOVEL COMPONENT IDENTIFICATION:**
+When discovering a Figma pattern with **no existing component match**:
+
+1. **Document the novel pattern**: What UI behavior/functionality is new?
+2. **Component proposal criteria**:
+   - **Reusability**: Will this pattern appear in 3+ places?
+   - **Complexity**: Does it have sufficient complexity to warrant a component?
+   - **Uniqueness**: Is it truly novel, not just a variant of existing components?
+3. **Decision**: Propose for design system if reusable, complex, and novel; implement as one-off if specific to feature only
+4. **Documentation**: Add to "Open Questions": "Potential new component: [ComponentName] - [brief description]"
+
+#### Step 2C: Architecture Planning
+**Required planning comment:**
+   ```
+   Component: <Name>
+   Figma: <URL>
+   Reused: [Button(...), Icon(...), Text, ...]
+   Variants/Props: { size: 'sm'|'md'|'lg', tone: 'neutral'|'brand'|'danger', ... }
+   API Inspiration (optional): Material UI <Link> (GUIDELINE:MUI-API-REFERENCE)
+Tokens: [--surface-subtle, --foreground-primary, --space-16, --radii-pill, ...]
+Boolean Controls: [showIcon, hasCounter, showDescription, ...]
+Novel Patterns: [None | Potential new component: ComponentName - description and proposal reasoning]
+   Open Questions: [token gaps, behavior, responsive, a11y clarifications]
+   ```
+
+### Definition of Done (single checklist)
+
+**Ship only when ALL items pass:**
+
+- [ ] Figma connection validated
+- [ ] Figma extraction complete (layout, spacing, borders/effects, states) and mapped to tokens
+- [ ] **Complexity assessment completed** (for novel components): Radix UI check performed or rationale documented
+- [ ] Tokens: validated semantics only; no primitives/raw hex; gaps documented
+ - [ ] No component-local CSS custom properties (`--*:`) defined in `src/components/**`
+ - [ ] Shadows use `var(--shadow-*)`; no raw `box-shadow` values
+- [ ] Radix-first: primitive adopted or exception rationale recorded (see RULE:RADIX-FIRST)
+- [ ] CSS: focus ring token applied (see RULE:A11Y-FOCUS-RING); disabled uses cursor not-allowed + pointer-events none
+- [ ] Stories: `tags: ["autodocs"]`, Playground controls, Figma link, representative variants/states
+- [ ] Code: ref forwarding, PropTypes, export pattern
+- [ ] A11y: roles, keyboard paths, focus ring present
+- [ ] Lint: `npm run lint` passes with 0 warnings
+
+### Phase 4: Implementation
+
+#### Step 4A: Layout Implementation
+- **AUTO-LAYOUT IMPLEMENTATION (MANDATORY)**:
+  - **Check Figma AutoLayout first**: If AutoLayout exists, use flexible sizing
+  - **Flexible sizing**: Use `min-width`, `max-width`, `aspect-ratio`, `flex: 1` instead of hard-coded dimensions
+  - **AutoLayout → CSS**: `display:flex/grid` with tokenized `gap/padding/radius`
+  - **Effects**: If the design requires elevation, apply a validated `--shadow-*` token (`shadows.css`) aligned to component type
+  - **Typography (MANDATORY)**: Define typography in the component’s CSS using variables from `typography.css`. Use `var(--font-*-size)` and `var(--font-*-line-height)` that match Figma text, and primitive weight variables `var(--font-regular|--font-normal|--font-semibold)` for `font-weight`. Avoid raw px or numeric weights.
+  - **Centering**: Use flex centering, never magic numbers
+  - **CRITICAL**: Only use hard-coded `width`/`height` if Figma explicitly shows fixed dimensions
+  - **Min-width guidance**: It is acceptable to use explicit `min-width` values when they represent specific design constraints (e.g., 122px from Figma). Do not force spacing tokens for these unless the spec ties them to the spacing scale.
+
+#### Step 4B: Interactive Behavior
+ID: RULE:RADIX-FIRST
+- **Radix-first (MANDATORY)**:
+  - **For complex components (3+ complexity characteristics)**: Follow Phase 0B: Component Complexity Assessment
+  - **For simple components**: Check Radix primitives: https://www.radix-ui.com/primitives/docs
+  - If a relevant Radix primitive exists, prefer adopting it unless core functionality would be intentionally skipped.
+  - Deeply understand the primitive: supported states, data attributes (e.g., `[data-state]`, `[data-disabled]`, `[data-placeholder]`), keyboard/focus behavior, composition patterns.
+  - Look up community usage examples to learn real-world consumption patterns and caveats.
+  - Only implement behavior manually when there is no suitable Radix primitive or when requirements diverge materially; document the rationale in the PR.
+- **Theme with tokens**: Apply design system visual tokens to primitive behavior
+- **Disabled state (MANDATORY)**: All disabled components must include `cursor: not-allowed` and `pointer-events: none`
+
+#### Step 4C: Sanity Commands (canonical scripts)
+- Use `npm run storybook:restart` to restart Storybook
+- Use `npm run tokens:audit` for token compliance checks
+- Use `npm run css:typography:audit` for optional typography audits
+
+## 2) Button Component Rules (Authoritative)
+ID: RULE:BUTTON-V2-ONLY
+
+### ButtonV2 Usage (MANDATORY)
+- **MUST use ButtonV2** for all button components in stories, examples, and component implementations
+- **NEVER use the old Button component** from `@/components/buttons`
+- **Import pattern**: `import { ButtonV2 } from "@/components/buttonV2"`
+- **Usage pattern**: `<ButtonV2 type="primary" label="Button Text" />`
+- **Icon usage**: Use `iconLeft` and `iconRight` props for icons
+- **Variants**: Use `type` prop with values: `primary`, `secondary`, `ghost`, `link`, `link-secondary`
+- **Sizes**: Use `size` prop with values: `small`, `medium`, `large`
+- **States**: Use `destructive`, `disabled`, `loading` props as needed
+
+### ButtonV2 Migration Checklist
+When updating components to use ButtonV2:
+1. **Update imports**: Change from `Button` to `ButtonV2`
+2. **Update props**: 
+   - `variant` → `type`
+   - `iconLeft` → `iconLeft` (same)
+   - `iconRight` → `iconRight` (same)
+   - `iconOnly` → `iconOnly` (same)
+   - `destructive` → `destructive` (same)
+   - `disabled` → `disabled` (same)
+   - `loading` → `loading` (same)
+3. **Update CSS selectors**: Change from `.mds-button` to `.mds-button-v2`
+4. **Update CSS variables**: Change from `--button-*` to `--button-v2-*`
+
+### ButtonV2 Anti-Patterns (NEVER DO)
+See RULE:BUTTON-V2-ONLY for WRONG/RIGHT button usage and migration checklist.
+
+## 3) Token & Styling Rules (Authoritative)
+
+### Core Token Rules
+ID: RULE:TOKENS-SEMANTIC, RULE:TOKENS-NO-PRIMITIVES
+- Use **semantic tokens** ONLY from validated sources:
+  - Check `src/theme/css/` folder for available tokens
+  - **Typography**: `typography.css`
+  - **Colors**: `colors-new.css` 
+  - **Spacing**: `space.css`
+  - **Layout**: `radii.css`, `shadows.css`
+  - **System**: `defaults.css`, `key-frames.css`, `layers.css`
+- **NEVER use primitive tokens** in component CSS (e.g., `--sand-4`, `--blue-500`, `--red-300`). Always use semantic tokens.
+ - **NEVER declare new CSS custom properties inside components**. If a new token is required, add it under `src/theme/css/**` via the design token process.
+- **MANDATORY**: Validate all tokens using discovery commands before use
+- **Figma Semantic Token Mapping (MANDATORY)**: If Figma shows a semantic token name, use that exact semantic token. If Figma shows a primitive color (e.g., `#e2e1de`), search for the corresponding semantic token first.
+- **Primitive Token Escalation**: If you encounter a primitive token in Figma, search for semantic alternatives:
+  ```bash
+  # Example: If Figma shows #e2e1de (sand-4), search for semantic tokens
+  grep -r "sand-4" src/theme/css/*.css
+  # Look for semantic tokens like --foreground-subtle, --surface-subtle, etc.
+  ```
+- Spacing/radii/shadows/typography **must** reference validated tokens:
+  ```css
+  /* Use discovery commands to find actual available tokens */
+  gap: var(--space-*);              /* Check space.css */
+  border-radius: var(--radii-*);    /* Check radii.css */
+  background: var(--surface-*);     /* Check colors-new.css */
+  color: var(--foreground-*);       /* Check colors-new.css */
+  box-shadow: var(--shadow-*);      /* Check shadows.css */
+  font-weight: var(--font-regular); /* Or --font-normal / --font-semibold from typography.css */
+  ```
+- **Typography (MANDATORY)**:
+  - Define typography in local component CSS using variables from `typography.css`.
+  - Use `var(--font-*-size)` and `var(--font-*-line-height)` tokens that correspond to the Figma text.
+  - For weights, use only the primitive root variables: `var(--font-regular)`, `var(--font-normal)`, `var(--font-semibold)`.
+  - Do not use raw numeric weights (e.g., `500`) or hard-coded px values for typography.
+- **Disabled visuals**: Disabled text/icons use `var(--foreground-secondary)`.
+- **Focus ring**: see RULE:A11Y-FOCUS-RING for the required `:focus-visible` outline.
+- **State colors**: Use `--status-*` tokens for error/warning/success/info.
+- Compact chips/pills:  
+  ```css
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  ```
+
+**RULE: If you're building error/success/warning/info states, you MUST use --status-* tokens.**
+
+### Token Anti-Patterns (NEVER DO THIS)
+See RULE:TOKENS-SEMANTIC and RULE:NO-COMPONENT-CUSTOM-PROPS for WRONG/RIGHT examples and checks.
+
+## 4) Accessibility (Non-Negotiable)
+ID: RULE:A11Y-FOCUS-RING
+- Semantic elements (button/link/input/etc) with proper roles/labels.  
+- Keyboard: Enter/Space on buttons, Arrow keys where relevant, focus management for overlays, ESC to close.  
+- **`:focus-visible`** outline in all interactive states using semantic tokens (never remove outline).  
+- Contrast: **WCAG AA** (text & UI components). If a token combo fails, flag it and propose an accessible token pairing.
+- **A11y check:** verify focus ring, contrast (AA), keyboard paths; no regressions. 
+
+## 5) Storybook Implementation (Part of Phase 4)
+
+### Step 4C: Storybook Stories
+**MANDATORY: Every component needs complete Storybook coverage**
+
+#### Required Storybook Structure
+ID: RULE:SB-AUTODOCS
+See RULE:SB-AUTODOCS for Storybook autodocs requirement and template.
+
+```jsx
+export default {
+  title: "Components/ComponentName",
+  component: Component,
+  tags: ["autodocs"],  // MANDATORY: Enables automatic docs generation
+  parameters: {
+    layout: "padded",
+    design: {
+      type: "figma",
+      url: "FIGMA_URL_HERE"
+    }
+  },
+  argTypes: {
+    // Map EVERY Figma boolean to Storybook control
+    showIcon: { control: "boolean" },
+    icon: { control: "text", if: { arg: "showIcon", eq: true } },
+  }
+};
+```
+
+#### Controls Mapping (mini-table)
+- boolean → control: boolean
+- enum (≤5 options) → control: radio; (>5) → control: select
+- number → control: number (or range with min/max/step)
+- string → control: text (only when safe)
+- color-like → control: color (only if API expects color; internals still use tokens)
+- event/callback → action: "event name" (not a control)
+- conditional example: show `icon` only when `showIcon` is true using `if: { arg: "showIcon", eq: true }`
+
+#### Control Types & Mapping (Flexible, Prop-Driven)
+- Expose meaningful controls for public props; disable or document props that are not safe to tweak live.
+- Mapping guidance:
+  - boolean → `control: "boolean"`
+  - enum/union (sizes, tones) → `radio` (≤5 options) or `select` (>5)
+  - number → `number` or `range` with `min/max/step`
+  - string → `text` only when safe; prefer curated examples for complex strings
+  - color-like → `color` only if the API expects a color (internally still use tokens)
+  - callback → `action` (don’t expose as a control)
+  - object/array → avoid controls; use curated stories
+- Conditional controls: use `if: { arg: "prop", eq: value }` to show only when relevant.
+
+**Documentation Approach:**
+- ✅ Use template in RULE:SB-AUTODOCS (`tags: ["autodocs"]`).
+- ❌ **NEVER**: Create separate `.mdx` files for component documentation
+- ✅ **RESULT**: Automatic props table, story examples, and component description
+
+#### Prop → Control Mapping (from Figma & API)
+- Map relevant props to controls based on the public API and Figma toggles/variants.
+- If no booleans exist, prioritize enums/variants (e.g., size) and important numeric/string props.
+- For components with many props, expose only impactful controls; disable the rest with a brief note in `argTypes`.
+
+#### Required Story Set (Adaptive)
+- Default: minimal sensible props
+- Playground (recommended): a story with all major controls for exploration
+- Variant Stories: per key variant group (e.g., size, tone) or a single story using a control
+- State Stories: Disabled/Loading/Selected/etc., when applicable
+- AllStates/KeyStates: grid for small state spaces; otherwise a curated set
+
+#### Storybook Anti-Patterns (Never Do)
+- ❌ Missing controls for public, relevant props (boolean/enum/primary numeric) when safe
+- ❌ Forcing boolean-focused stories when the component has no booleans
+- ❌ Stories that don't demonstrate representative variations/states
+- ❌ Allow prop descriptions in `<p>` element beneath `<h1>` in docs
+- ❌ Creating separate `.mdx` files for component documentation (use `autodocs` instead)
+- ❌ Missing `tags: ["autodocs"]` in stories file
+
+## Accessibility Invariants (micro)
+See Rule Card `RULE:a11y-focus-ring` for enforcement details.
+
+## Appendix — Canonical Scripts (suggested)
+- `npm run lint` — must exit 0 (GATE:LINT-ZERO-WARNINGS)
+- `npm run tokens:audit` — run semantic color and raw color checks
+- `npm run storybook:restart` — restart to clear stale caches
+- `npm run css:typography:audit` — optional typography audits
+
+Additional suggested audits (run locally or via CI):
+
+```bash
+# Forbid component-local CSS custom property definitions (only allow usage)
+rg -n '(^|\s)--[a-zA-Z0-9-]+\s*:' src/components --glob '**/*.css'
+
+# Require shadow tokens (flags raw box-shadow definitions)
+rg -nP 'box-shadow:\s*(?!var\(--shadow-)' src/components --glob '**/*.css'
+```
+
+## Appendix — Raw Commands Fallback (if scripts unavailable)
+```bash
+# Token audits (semantic usage + detect raw colors)
+rg -n "var\(--(foreground|background|surface|border|interactive|status)" src/components --glob "**/*.css"
+rg -n "#[0-9a-fA-F]{3,6}|rgb\s*\(|rgba\s*\(" src/components --glob "**/*.css"
+
+# Typography audits
+rg -n "font-weight:\s*[1-9]00|font-size:\s*\d+px" src/components --glob "**/*.{css,scss}"
+
+# Restart Storybook
+pkill -f "storybook" || true && npm run storybook
+```
+
+## Appendix — Minimal Component Scaffold
+```
+// Component.jsx
+import PropTypes from "prop-types";
+import { forwardRef } from "react";
+
+const Component = forwardRef(function Component(props, ref) {
+  return <div ref={ref} {...props} />;
+});
+
+Component.displayName = "Component";
+
+Component.propTypes = {
+  // public props here
+};
+
+export default Component;
+
+// index.js
+export { default as Component } from "./Component";
+
+// root index.js
+export { Component } from "@/components/component";
+```
+
+## Appendix — Radix Implementation Cheatsheet
+
+```jsx
+// Radix wrapper pattern (compose behavior, theme visuals)
+import * as Radix from "@radix-ui/react-component";
+import { forwardRef } from "react";
+
+const Component = forwardRef(function Component(props, ref) {
+  return (
+    <Radix.Root ref={ref} data-radix-component-root="" {...props} />
+  );
+});
+
+export default Component;
+```
+
+```css
+/* Theme via tokens and Radix data attributes */
+[data-radix-component-root] {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radii-md);
+}
+
+[data-radix-component-root][data-state="open"] {
+  background: var(--surface-hover);
+}
+
+[data-radix-component-root]:focus-visible {
+  outline: 2px solid var(--interactive-focus-ring);
+}
+```
+
+### Linting & Formatting (Non-Negotiable)
+ID: GATE:LINT-ZERO-WARNINGS
+
+- **Respect project ESLint configuration** at all times. Use the repository’s ESLint configuration files and `package.json` settings (rules, plugins, parser options).
+- **Do not bypass lint rules** unless explicitly permitted in the project config. If a targeted disable is absolutely necessary:
+  - Narrow the scope to the smallest possible line/statement
+  - Specify the exact rule and a short justification, e.g. `// eslint-disable-next-line react/prop-types -- reason`
+  - Remove the disable once no longer needed
+- **Plugins to honor** (as configured in the project): `eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `eslint-plugin-storybook`, and `eslint-config-prettier`.
+- **Commands**:
+  - Run `npm run lint` locally before committing (CI expects 0 warnings due to `--max-warnings 0`).
+  - Prefer fixes via code changes; when available, use `npm run lint -- --fix` for safe autofixes.
+- **Unused disables are errors**: The configuration uses `--report-unused-disable-directives`; remove any unnecessary disables flagged by the linter.
+
+### Testing Requirements
+- **Tests (RTL):** Render all variants; verify keyboard/focus; assert important callbacks; basic axe check when feasible.  
+- Add a `testId` to **every component** (even if it's just via spreading `...props`).  
+- Make sure the `testId` is **unique**, **descriptive**, and **consistent** across the library.
+
+### Component Testing Environment
+- **React Components MUST be tested in React environment**: Components use JSX and React APIs that require a React runtime
+- **Storybook is the primary testing environment**: Use `npm run storybook` to test components visually and interactively
+- **Node.js direct imports will fail**: Don't test component imports with `node -e "require('./component')"` - this will fail because:
+  - JSX files require React/JSX transformation
+  - ES modules with `.jsx` extensions need proper bundler setup
+  - Components are designed for React applications, not Node.js scripts
+- **Alternative testing approaches**:
+  - ✅ **Storybook**: `npm run storybook` → Visual testing and interaction
+  - ✅ **ESLint**: `npx eslint src/components/component/` → Code quality validation
+  - ✅ **Import testing in React app**: Test imports in actual React application context
+  - ❌ **Node.js direct require**: Will fail with "Unknown file extension .jsx" error
+
+### Component Linting Best Practices
+- **Use `npm run lint:component` for component-specific linting** (RECOMMENDED):
+  ```bash
+  # Lint specific files
+  npm run lint:component -- src/components/componentName/ComponentName.jsx
+  
+  # Lint multiple files
+  npm run lint:component -- src/components/componentName/ComponentName.jsx src/components/componentName/index.js
+  
+  # Lint entire component directory
+  npm run lint:component -- src/components/componentName/
+  ```
+- **Use direct ESLint with specific files** (ALTERNATIVE):
+  ```bash
+  # Single file
+  npx eslint src/components/componentName/ComponentName.jsx --quiet
+  
+  # Multiple files
+  npx eslint src/components/componentName/ComponentName.jsx src/components/componentName/index.js --quiet
+  ```
+- **Avoid directory-based commands without flags** (CAN HANG):
+  ```bash
+  # ❌ This can hang due to background processes
+  npx eslint src/components/componentName/ --ext js,jsx
+  ```
+- **Why hanging occurs**:
+  - Background processes (Figma MCP server, Storybook, etc.)
+  - File watching conflicts between multiple processes
+  - Terminal output buffering with large output
+  - Process interference from background services
+ - **Best practices**:
+  - Always use `npm run lint:component` for component work
+  - Specify exact files when possible
+  - Use `--quiet` flag to reduce output noise
+  - Avoid directory-based commands when background processes are running
+
+## 6) Export Rules (Authoritative)
+ID: RULE:EXPORT-PATTERN
+
+**Export every component** unless explicitly instructed not to.  
+Follow these rules when it comes to exporting components:
+
+1. **Component files** should export using **default export**:
+   ```jsx
+   // Component.jsx (reference: Button.jsx)
+   export default Component;
+   ```
+
+2. **Folder index.js** files should **re-export as named exports**:
+   ```jsx
+   // index.js in component folder 
+   export { default as Component } from "./Component";
+   export { default as AnotherComponent } from "./AnotherComponent";
+   ```
+
+3. The **main index.js** re-exports these **named components**:
+   ```jsx
+   // main index.js
+   export { Component, AnotherComponent } from "@/components/folder";
+   ```
+   
+4. **Do NOT** add a second **default export** from the `index.js` files.  
+   The pattern is to use **named exports** in index files to allow importing multiple components from the same folder.
+
+## 7) Iteration / Vibe-Coding (Micro-Tuning Existing Components)
+**Principles:**
+- **Tiny, reviewable diffs.** Iterate in small PRs with screenshots and story links.  
+- **No API surprises:** if a prop changes behavior or defaults, **treat as breaking** (semver + migration note).  
+- **Never drift from tokens.** Any optical nudge uses padding/margins **from tokens**; if truly missing, propose a token.
+
+**When iteration reveals a deeper need:**
+- **Token gap?** Propose `--control-compact-padding-block` (example), document intent, map usages.  
+- **Behavioral change?** Add a new **variant prop** rather than silently altering defaults.
+
+## 8) Practical Mapping Cheatsheet
+- **AutoLayout** → `display:flex` + `gap` (token) + `align-items`/`justify-content` + **flexible sizing** (no hard-coded dimensions)
+- **Grid** → `display:grid` with tokenized gaps and template columns/rows.  
+- **Corner radius** → `--radii-*`; **Shadow** → `--shadow-*`.  
+- **Spacing** → `--space-*`; **Typography** via local component CSS using variables from `typography.css` (sizes/line-heights) and primitive weight variables (`--font-regular|--font-normal|--font-semibold`).  
+- **Pills/Chips** → `line-height: 1; inline-flex; align-items: center; padding-block via size tokens`.
+- **Flexible Sizing** → `min-width`, `max-width`, `aspect-ratio`, `flex: 1` instead of hard-coded `width`/`height`
+- **Component Linting** → `npm run lint:component -- src/components/componentName/` (reliable, no hanging)
+
+### Radix Mapping (adopt primitives before custom JS)
+**See Phase 0B: Component Complexity Assessment for detailed guidance**
+
+**Common Component → Radix UI Mappings:**
+- Dialog/Modal → Radix `Dialog`
+- Popover/Dropdown → Radix `Popover` / `DropdownMenu`
+- Tooltip → Radix `Tooltip`
+- Tabs → Radix `Tabs`
+- Toggle/Switch → Radix `Switch`
+- Listbox/Select → Radix `Select`
+- Checkbox → Radix `Checkbox`
+- Radio Group → Radix `RadioGroup`
+- Progress/Slider/Range → Radix `Progress`, `Slider`
+- Toast → Radix `Toast`
+- Collapsible/Accordion → Radix `Collapsible`, `Accordion`
+- Navigation Menu → Radix `NavigationMenu`
+- Breadcrumb → Radix `Breadcrumb`
+- Hover Card → Radix `HoverCard`
+- Alert Dialog → Radix `AlertDialog`
+- Scroll Area → Radix `ScrollArea`
+- Separator → Radix `Separator`
+- Context Menu → Radix `ContextMenu`
+- Menubar → Radix `Menubar`
+
+Suggestion: When naming public props/variants for these components, it is acceptable to reference Material UI’s API for inspiration where it improves DX and aligns with our architecture (e.g., `size`, `variant`, `color`, controlled/uncontrolled patterns). Keep this as guidance only, not a mandate. See `https://mui.com/material-ui/all-components/`.
+
+## 9) Final Delivery — Use the Definition of Done
+
+All final delivery checks are specified once in the "Definition of Done" section above. Do not maintain parallel checklists here. If a check is missing, add it to the DoD only.
+
+## 10) Anti-Patterns (Never Do)
+
+### **Code Quality Anti-Patterns**
+- Hard-coded px/hex/rgba, magic numbers for centering, or local `:root` in component CSS.  
+- **Hard-coded dimensions**: Using fixed `width`/`height` when Figma shows AutoLayout (use flexible sizing instead)
+- Recreating existing primitives for nested controls.  
+- Removing `:focus-visible`.  
+- **Missing disabled cursor**: Disabled components without `cursor: not-allowed` (all disabled states must show not-allowed cursor)
+- Shipping a component without stories/tests/exports/refs.  
+- Silent API changes in an iteration.
+
+### **Component Reuse Anti-Patterns (CRITICAL)**
+See Decision Tree (Reuse vs Novel) and Rule Cards for reuse guidance and examples.
+
+### **Search Process Anti-Patterns**
+❌ **Insufficient Component Discovery**
+- Only searching for exact component names (e.g., searching "Button" but missing "FilterButton")
+- Not checking component directories systematically
+- Skipping visual pattern searches (e.g., not searching "Card" for stat displays)
+- Not reading component index exports to see what's available
+
+✅ **Proper Component Discovery Process**
+- Search by functionality: "stat", "metric", "summary", "card"
+- Search by UI pattern: "filter", "navigation", "table cell", "status"
+- Scan component directories systematically
+- Check main index.js exports
+- Use codebase_search to find similar implementations
+
+## 11) Additional Guidelines
+- Add `displayName` to all components for easier debugging.
+- Include inline JSDoc-style comments for public components to aid other consumers.
+- Ensure responsiveness and keyboard accessibility where applicable.
+
+<!-- duplicate section removed -->

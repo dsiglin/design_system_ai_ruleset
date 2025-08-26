@@ -1,0 +1,8 @@
+# CODEOWNERS
+# This file defines who must review changes to specific parts of the repo.
+# Place this file in the root, /docs/, or /.github/ directory.
+
+# Apply to everything in the repo
+* @dsiglin
+
+

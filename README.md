@@ -1,15 +1,14 @@
-# design_system_ai_ruleset
-A public repository to share rule sets used to build components with AI
+# Design System AI Ruleset
 
-Here's a summary of the MileIQ ruleset
-gates:
-  - Make sure AI can see Figma file, otherwise it will make stuff up
-  - Lint the code
-rules:
-  - Use semantic tokens
-  - Don't make hardcoded colors, type, space, etec
-  - If complex enough, use Radix as scaffolding for the component
-  - Accessibility checks
-  - Export to other components any new component so we can reuse existing components
-guidelines:
-  - Use Material UI as an API reference
+## Siglin's rule set
+This design system follows a structured workflow for creating components:
+- Verify Figma Connection
+- Check if component is novel
+- Consider use of Radix if component is complex
+- Extract tokens and plan API
+- Build component
+- Lint component
+
+### Recommended Prompt
+
+> It's time to make a component. First, read through the entire design system rules to understand the nuance. After reading through the rules, follow them and create this component: [add figma link]

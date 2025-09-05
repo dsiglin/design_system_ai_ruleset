@@ -3,11 +3,6 @@ description: Design System rules (human + machine)
 alwaysApply: true
 version: 1.0.0
 updated: 2025-08-26
-license:
-  name: MIT
-  author: David Siglin
-  website: http://www.davidsiglin.com
-  email: dsiglin@gmail.com
 variables:
   tokensDir: "src/theme/css"
   componentsDir: "src/components"
@@ -89,7 +84,6 @@ ruleCatalog:
         optional: true
     references:
       - "https://www.radix-ui.com/primitives/docs"
-  - id: RULE:sb-autodocs
   - id: RULE:export-pattern
     title: Export pattern enforced
     type: rule
@@ -130,31 +124,6 @@ ruleCatalog:
       - "{{storiesDir}}"
 ---
 
-<!--
-MIT License
-
-Copyright (c) 2025 David Siglin
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-Author: David Siglin — http://www.davidsiglin.com — dsiglin@gmail.com
--->
 
 ---
 
@@ -400,9 +369,13 @@ Docs: Note the primitive used (or exception) in the component header comment.
 ### Phase 1: Figma Extraction Checklist (concise)
 
 Complete before coding (reuse path may document only deltas):
+
+#### Step 1A: Design Data Extraction
 1. Fetch node and document variants and child structure
 2. Capture layout: `layoutMode`, `layoutWrap`, `padding`, `itemSpacing`, `primaryAxisAlignItems`, `counterAxisAlignItems`
 3. Map exact spacing/borders/effects to tokens (no raw values)
+
+#### Step 1B: Component Configuration
 4. Identify boolean controls → will become Storybook controls
 5. Typography mapping: use `typography.css` variables for sizes/line-heights and primitive weight variables (see RULE:TOKENS-SEMANTIC)
    - If no exact match exists, document the gap and choose the nearest variables; propose follow-up if recurring.
@@ -444,15 +417,20 @@ Use canonical scripts (see Appendix) to audit tokens. Reference results in your 
 - **Never Use Primitives**: Do not translate Figma semantic tokens into raw palette primitives in component CSS
  
 **Figma → Token Mapping (cheat sheet):**
-- foreground → `--color-text-*`
-- surface → `--color-surface-*`
-- border → `--color-border-*`
-- interactive → `--color-interaction-*`
+- foreground → `--foreground-*` (from colors-new.css ONLY)
+- surface → `--surface-*` (from colors-new.css ONLY)
+- border → `--border-*` (from colors-new.css ONLY)
+- interactive → `--interactive-*` (from colors-new.css ONLY)
+- status → `--status-*` (from colors-new.css ONLY)
 - spacing → `--space-*`
 - radius → `--radii-*`
 - shadow → `--shadow-*`
 
+**CRITICAL: All color tokens must come from colors-new.css, never colors.css**
+
 **RULE: If a token doesn't appear in these scans, it DOESN'T EXIST.**
+
+**RULE: NEVER use tokens from colors.css - only use colors-new.css**
 
 **Token Validation Failure Recovery:**
 1. **Stop immediately** - don't proceed with invalid/missing token
@@ -511,13 +489,14 @@ When discovering a Figma pattern with **no existing component match**:
    Reused: [Button(...), Icon(...), Text, ...]
    Variants/Props: { size: 'sm'|'md'|'lg', tone: 'neutral'|'brand'|'danger', ... }
    API Inspiration (optional): Material UI <Link> (GUIDELINE:MUI-API-REFERENCE)
+   MUI Patterns: [onClose, onAccept, onReject, severity, value, onChange, etc.] (see MUI API Pattern Guidelines)
 Tokens: [--surface-subtle, --foreground-primary, --space-16, --radii-pill, ...]
 Boolean Controls: [showIcon, hasCounter, showDescription, ...]
 Novel Patterns: [None | Potential new component: ComponentName - description and proposal reasoning]
    Open Questions: [token gaps, behavior, responsive, a11y clarifications]
    ```
 
-### Definition of Done (single checklist)
+### Phase 3: Definition of Done (single checklist)
 
 **Ship only when ALL items pass:**
 
@@ -559,7 +538,80 @@ ID: RULE:RADIX-FIRST
 - **Theme with tokens**: Apply design system visual tokens to primitive behavior
 - **Disabled state (MANDATORY)**: All disabled components must include `cursor: not-allowed` and `pointer-events: none`
 
-#### Step 4C: Sanity Commands (canonical scripts)
+#### Step 4C: Storybook Implementation
+**MANDATORY: Every component needs complete Storybook coverage**
+
+##### Required Storybook Structure
+ID: RULE:SB-AUTODOCS
+See RULE:SB-AUTODOCS for Storybook autodocs requirement and template.
+
+```jsx
+export default {
+  title: "Components/ComponentName",
+  component: Component,
+  tags: ["autodocs"],  // MANDATORY: Enables automatic docs generation
+  parameters: {
+    layout: "padded",
+    design: {
+      type: "figma",
+      url: "FIGMA_URL_HERE"
+    }
+  },
+  argTypes: {
+    // Map EVERY Figma boolean to Storybook control
+    showIcon: { control: "boolean" },
+    icon: { control: "text", if: { arg: "showIcon", eq: true } },
+  }
+};
+```
+
+##### Controls Mapping (mini-table)
+- boolean → control: boolean
+- enum (≤5 options) → control: radio; (>5) → control: select
+- number → control: number (or range with min/max/step)
+- string → control: text (only when safe)
+- color-like → control: color (only if API expects color; internals still use tokens)
+- event/callback → action: "event name" (not a control)
+- conditional example: show `icon` only when `showIcon` is true using `if: { arg: "showIcon", eq: true }`
+
+##### Control Types & Mapping (Flexible, Prop-Driven)
+- Expose meaningful controls for public props; disable or document props that are not safe to tweak live.
+- Mapping guidance:
+  - boolean → `control: "boolean"`
+  - enum/union (sizes, tones) → `radio` (≤5 options) or `select` (>5)
+  - number → `number` or `range` with `min/max/step`
+  - string → `text` only when safe; prefer curated examples for complex strings
+  - color-like → `color` only if the API expects a color (internally still use tokens)
+  - callback → `action` (don't expose as a control)
+  - object/array → avoid controls; use curated stories
+- Conditional controls: use `if: { arg: "prop", eq: value }` to show only when relevant.
+
+**Documentation Approach:**
+- ✅ Use template in RULE:SB-AUTODOCS (`tags: ["autodocs"]`).
+- ❌ **NEVER**: Create separate `.mdx` files for component documentation
+- ✅ **RESULT**: Automatic props table, story examples, and component description
+
+##### Prop → Control Mapping (from Figma & API)
+- Map relevant props to controls based on the public API and Figma toggles/variants.
+- If no booleans exist, prioritize enums/variants (e.g., size) and important numeric/string props.
+- For components with many props, expose only impactful controls; disable the rest with a brief note in `argTypes`.
+
+##### Required Story Set (Adaptive)
+- Default: minimal sensible props
+- Playground (recommended): a story with all major controls for exploration
+- Variant Stories: per key variant group (e.g., size, tone) or a single story using a control
+- State Stories: Disabled/Loading/Selected/etc., when applicable
+- AllStates/KeyStates: grid for small state spaces; otherwise a curated set
+
+##### Storybook Anti-Patterns (Never Do)
+- ❌ Missing controls for public, relevant props (boolean/enum/primary numeric) when safe
+- ❌ Forcing boolean-focused stories when the component has no booleans
+- ❌ Stories that don't demonstrate representative variations/states
+- ❌ Allow prop descriptions in `<p>` element beneath `<h1>` in docs
+- ❌ Creating separate `.mdx` files for component documentation (use `autodocs` instead)
+- ❌ Missing `tags: ["autodocs"]` in stories file
+
+#### Step 4D: Sanity Commands (canonical scripts)
 - Use `npm run storybook:restart` to restart Storybook
 - Use `npm run tokens:audit` for token compliance checks
 - Use `npm run css:typography:audit` for optional typography audits
@@ -601,10 +653,11 @@ ID: RULE:TOKENS-SEMANTIC, RULE:TOKENS-NO-PRIMITIVES
 - Use **semantic tokens** ONLY from validated sources:
   - Check `src/theme/css/` folder for available tokens
   - **Typography**: `typography.css`
-  - **Colors**: `colors-new.css` 
+  - **Colors**: `colors-new.css` ONLY (deprecated: `colors.css`)
   - **Spacing**: `space.css`
   - **Layout**: `radii.css`, `shadows.css`
   - **System**: `defaults.css`, `key-frames.css`, `layers.css`
+- **RULE**: NEVER use tokens from `colors.css` - only use `colors-new.css`
 - **NEVER use primitive tokens** in component CSS (e.g., `--sand-4`, `--blue-500`, `--red-300`). Always use semantic tokens.
  - **NEVER declare new CSS custom properties inside components**. If a new token is required, add it under `src/theme/css/**` via the design token process.
 - **MANDATORY**: Validate all tokens using discovery commands before use
@@ -645,6 +698,31 @@ ID: RULE:TOKENS-SEMANTIC, RULE:TOKENS-NO-PRIMITIVES
 ### Token Anti-Patterns (NEVER DO THIS)
 See RULE:TOKENS-SEMANTIC and RULE:NO-COMPONENT-CUSTOM-PROPS for WRONG/RIGHT examples and checks.
 
+❌ **WRONG: Using primitive tokens or inventing tokens**
+```css
+/* PRIMITIVE TOKENS - NEVER USE THESE */
+background-color: var(--sand-4);      /* Use --foreground-subtle instead! */
+color: var(--blue-500);               /* Use semantic token instead! */
+border-color: var(--red-300);         /* Use --status-error instead! */
+
+/* INVENTED TOKENS - NEVER USE THESE */
+font-weight: var(--font-medium);      /* DOESN'T EXIST! */
+color: var(--foreground-disabled);    /* DOESN'T EXIST! */
+background-color: var(--error-bg);    /* Use discovery commands first! */
+/* LOCAL CUSTOM PROPERTIES IN COMPONENTS - NEVER DO THIS */
+:root {                               /* WRONG in component CSS */
+  --segmented-control-background: #f1f0ef;
+}
+```
+
+✅ **RIGHT: Using validated tokens from discovery commands**
+```css
+/* Use only tokens found via discovery commands */
+font-weight: var(--[token-found-in-typography.css]);
+color: var(--[token-found-in-colors-new.css]);
+background-color: var(--[token-found-in-colors-new.css]);
+```
+
 ## 4) Accessibility (Non-Negotiable)
 ID: RULE:A11Y-FOCUS-RING
 - Semantic elements (button/link/input/etc) with proper roles/labels.  
@@ -654,12 +732,11 @@ ID: RULE:A11Y-FOCUS-RING
 - **A11y check:** verify focus ring, contrast (AA), keyboard paths; no regressions. 
 
 ## 5) Storybook Implementation (Part of Phase 4)
+ID: RULE:SB-AUTODOCS
 
-### Step 4C: Storybook Stories
 **MANDATORY: Every component needs complete Storybook coverage**
 
-#### Required Storybook Structure
-ID: RULE:SB-AUTODOCS
+### Required Storybook Structure
 See RULE:SB-AUTODOCS for Storybook autodocs requirement and template.
 
 ```jsx
@@ -682,7 +759,7 @@ export default {
 };
 ```
 
-#### Controls Mapping (mini-table)
+### Controls Mapping (mini-table)
 - boolean → control: boolean
 - enum (≤5 options) → control: radio; (>5) → control: select
 - number → control: number (or range with min/max/step)
@@ -691,7 +768,7 @@ export default {
 - event/callback → action: "event name" (not a control)
 - conditional example: show `icon` only when `showIcon` is true using `if: { arg: "showIcon", eq: true }`
 
-#### Control Types & Mapping (Flexible, Prop-Driven)
+### Control Types & Mapping (Flexible, Prop-Driven)
 - Expose meaningful controls for public props; disable or document props that are not safe to tweak live.
 - Mapping guidance:
   - boolean → `control: "boolean"`
@@ -699,7 +776,7 @@ export default {
   - number → `number` or `range` with `min/max/step`
   - string → `text` only when safe; prefer curated examples for complex strings
   - color-like → `color` only if the API expects a color (internally still use tokens)
-  - callback → `action` (don’t expose as a control)
+  - callback → `action` (don't expose as a control)
   - object/array → avoid controls; use curated stories
 - Conditional controls: use `if: { arg: "prop", eq: value }` to show only when relevant.
 
@@ -708,19 +785,19 @@ export default {
 - ❌ **NEVER**: Create separate `.mdx` files for component documentation
 - ✅ **RESULT**: Automatic props table, story examples, and component description
 
-#### Prop → Control Mapping (from Figma & API)
+### Prop → Control Mapping (from Figma & API)
 - Map relevant props to controls based on the public API and Figma toggles/variants.
 - If no booleans exist, prioritize enums/variants (e.g., size) and important numeric/string props.
 - For components with many props, expose only impactful controls; disable the rest with a brief note in `argTypes`.
 
-#### Required Story Set (Adaptive)
+### Required Story Set (Adaptive)
 - Default: minimal sensible props
 - Playground (recommended): a story with all major controls for exploration
 - Variant Stories: per key variant group (e.g., size, tone) or a single story using a control
 - State Stories: Disabled/Loading/Selected/etc., when applicable
 - AllStates/KeyStates: grid for small state spaces; otherwise a curated set
 
-#### Storybook Anti-Patterns (Never Do)
+### Storybook Anti-Patterns (Never Do)
 - ❌ Missing controls for public, relevant props (boolean/enum/primary numeric) when safe
 - ❌ Forcing boolean-focused stories when the component has no booleans
 - ❌ Stories that don't demonstrate representative variations/states
@@ -821,7 +898,7 @@ export default Component;
 ### Linting & Formatting (Non-Negotiable)
 ID: GATE:LINT-ZERO-WARNINGS
 
-- **Respect project ESLint configuration** at all times. Use the repository’s ESLint configuration files and `package.json` settings (rules, plugins, parser options).
+- **Respect project ESLint configuration** at all times. Use the repository's ESLint configuration files and `package.json` settings (rules, plugins, parser options).
 - **Do not bypass lint rules** unless explicitly permitted in the project config. If a targeted disable is absolutely necessary:
   - Narrow the scope to the smallest possible line/statement
   - Specify the exact rule and a short justification, e.g. `// eslint-disable-next-line react/prop-types -- reason`
@@ -957,7 +1034,34 @@ Follow these rules when it comes to exporting components:
 - Context Menu → Radix `ContextMenu`
 - Menubar → Radix `Menubar`
 
-Suggestion: When naming public props/variants for these components, it is acceptable to reference Material UI’s API for inspiration where it improves DX and aligns with our architecture (e.g., `size`, `variant`, `color`, controlled/uncontrolled patterns). Keep this as guidance only, not a mandate. See `https://mui.com/material-ui/all-components/`.
+Suggestion: When naming public props/variants for these components, it is acceptable to reference Material UI's API for inspiration where it improves DX and aligns with our architecture (e.g., `size`, `variant`, `color`, controlled/uncontrolled patterns). Keep this as guidance only, not a mandate. See `https://mui.com/material-ui/all-components/`.
+
+### MUI API Pattern Guidelines
+
+**Use MUI patterns when:**
+- ✅ **Components with clear MUI equivalents** (Dialogs, Alerts, Snackbars, Tooltips)
+- ✅ **Form components** (Inputs, Selects, Checkboxes, RadioGroups) - MUI has excellent patterns
+- ✅ **When it significantly improves DX** - Familiar patterns reduce learning curve
+- ✅ **New components** - Start with MUI patterns for consistency
+- ✅ **Controlled/uncontrolled patterns** - Use `value`/`defaultValue`, `onChange`, `onBlur`
+
+**Keep custom patterns when:**
+- ✅ **Components with unique requirements** - Custom patterns may be better
+- ✅ **Established components with existing usage** - Don't break existing APIs
+- ✅ **Domain-specific components** (Tables, Cards, specialized business components)
+- ✅ **When custom patterns are more semantic** (e.g., `type` vs `variant` for buttons)
+
+**Common MUI Pattern Mappings:**
+- Dialog/Modal: `onClose`, `onAccept`, `onReject`, `severity`
+- Form inputs: `value`, `defaultValue`, `onChange`, `onBlur`, `error`, `helperText`
+- Alerts: `severity`, `onClose`, `action`
+- Buttons: `onClick`, `disabled`, `loading` (but keep custom `type` prop)
+- Selects: `value`, `onChange`, `options`, `placeholder`
+
+**Implementation Strategy:**
+- **New components**: Start with MUI patterns
+- **Existing components**: Add MUI patterns as aliases where beneficial
+- **Hybrid approach**: Use MUI patterns for common props, custom patterns for unique requirements
 
 ## 9) Final Delivery — Use the Definition of Done
 

@@ -2,7 +2,7 @@
 
 ## Siglin's rule set
 This design system follows a structured workflow for creating components:
-- Verify Figma Connection
+- Verify Figma Connection exists
 - Check if component is novel
 - Consider use of Radix if component is complex
 - Extract tokens and plan API
